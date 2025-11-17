@@ -5,12 +5,12 @@
 This project depends on the [xcodegen](https://github.com/yonaskolb/XcodeGen?tab=readme-ov-file#installing) command line tool.
 
 ```bash
-git clone git@github.com:wakatime/macos-wakatime.git
-cd macos-wakatime
+git clone git@github.com:heroboard/macos-heroboard.git
+cd macos-heroboard
 xcodegen
 ```
 
-Then open the `WakaTime.xcodeproj` in [Xcode 15.2](https://developer.apple.com/services-account/download?path=/Developer_Tools/Xcode_15.2/Xcode_15.2.xip).
+Then open the `Heroboard.xcodeproj` in [Xcode 15.2](https://developer.apple.com/services-account/download?path=/Developer_Tools/Xcode_15.2/Xcode_15.2.xip).
 Currently there’s a bug in new Swift compiler versions, so the largest Xcode version working with this app is 15.2.
 
 ## Branches
@@ -43,7 +43,7 @@ More info at [wakatime/semver-action](https://github.com/wakatime/semver-action#
 ## Pull Requests
 
 - Big changes, changes to the API, or changes with backward compatibility trade-offs should be first discussed in the Slack.
-- Search [existing pull requests](https://github.com/wakatime/macos-wakatime/pulls) to see if one has already been submitted for this change. Search the [issues](https://github.com/wakatime/macos-wakatime/issues?q=is%3Aissue) to see if there has been a discussion on this topic and whether your pull request can close any issues.
+- Search [existing pull requests](https://github.com/heroboard/macos-heroboard/pulls) to see if one has already been submitted for this change. Search the [issues](https://github.com/heroboard/macos-heroboard/issues?q=is%3Aissue) to see if there has been a discussion on this topic and whether your pull request can close any issues.
 - Code formatting should be consistent with the style used in the existing code.
 - Don't leave commented out code. A record of this code is already preserved in the commit history.
 - All commits must be atomic. This means that the commit completely accomplishes a single task. Each commit should result in fully functional code. Multiple tasks should not be combined in a single commit, but a single task should not be split over multiple commits (e.g. one commit per file modified is not a good practice). For more information see <http://www.freshconsulting.com/atomic-commits>.
@@ -65,14 +65,14 @@ More info at [wakatime/semver-action](https://github.com/wakatime/semver-action#
 If you have trouble building off `main` branch, try:
 
 * close Xcode
-* `rm -rf ~/Library/Developer/Xcode/DerivedData/WakaTime*`
-* `rm -rf ./WakaTime.xcodeproj`
+* `rm -rf ~/Library/Developer/Xcode/DerivedData/Heroboard*`
+* `rm -rf ./Heroboard.xcodeproj`
 * `xcodegen`
 * Open the project in Xcode
 * Under `Signing & Capabilities`, set your `Team`
 
 To read local user preferences, run:
 
-    defaults read macos-wakatime.WakaTime
+    defaults read macos-heroboard.Heroboard
 
 Any question join us on [Slack](https://wakaslack.herokuapp.com/).

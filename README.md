@@ -1,17 +1,17 @@
-# macos-wakatime
+# macos-heroboard
 
 Mac system tray app for automatic time tracking and metrics generated from your Xcode activity.
 
 ## Install
 
-1. Download the [latest release](https://github.com/wakatime/macos-wakatime/releases/latest/download/macos-wakatime.zip).
-2. Move `WakaTime.app` into your `Applications` folder, and run `WakaTime.app`.
-3. Enter your [WakaTime API Key][api key], then press `Save`.
-4. Use Xcode like normal and your coding activity will be displayed on your [WakaTime dashboard][dashboard]
+1. Download the [latest release](https://github.com/heroboard/macos-heroboard/releases/latest/download/macos-heroboard.zip).
+2. Move `Heroboard.app` into your `Applications` folder, and run `Heroboard.app`.
+3. Enter your [Heroboard API Key][api key], then press `Save`.
+4. Use Xcode like normal and your coding activity will be displayed on your [Heroboard dashboard][dashboard]
 
 ## Usage
 
-Keep the app running in your system tray, and your Xcode usage will show on your [WakaTime dashboard][dashboard].
+Keep the app running in your system tray, and your Xcode usage will show on your [Heroboard dashboard][dashboard].
 
 ## Building from Source
 
@@ -23,13 +23,13 @@ If you run into Accessibility problems, try running `sudo tccutil reset Accessib
 
 ## Uninstall
 
-To uninstall, move `WakaTime.app` into your mac Trash.
+To uninstall, move `Heroboard.app` into your mac Trash.
 
-If you don’t use any other WakaTime plugins, run `rm -r ~/.wakatime*`.
+If you don't use any other Heroboard plugins, run `rm -r ~/.heroboard*`.
 
 ## Supported Apps
 
-WakaTime for Mac can track the time you spend in any app on your mac. It’s a catch-all when we don’t have a plugin for your IDE or app.
+Heroboard for Mac can track the time you spend in any app on your mac. It's a catch-all when we don't have a plugin for your IDE or app.
 
 We add support for specific apps when a custom category, project, or entity type is necessary.
 For example, when Slack needs the `communicating` category or Figma needs the `designing` category.
@@ -43,10 +43,10 @@ Pull requests and issues are welcome!
 See [Contributing][contributing] for more details.
 Many thanks to all [contributors][authors]!
 
-Made with :heart: by the WakaTime Team.
+Made with :heart: by the Heroboard Team.
 
-[api key]: https://wakatime.com/api-key
-[dashboard]: https://wakatime.com/
+[api key]: https://heroboard.com/api-key
+[dashboard]: https://heroboard.com/
 [contributing]: CONTRIBUTING.md
 [authors]: AUTHORS
-[supported apps]: https://github.com/wakatime/macos-wakatime/blob/main/WakaTime/Watchers/MonitoredApp.swift#L3
+[supported apps]: https://github.com/heroboard/macos-heroboard/blob/main/Heroboard/Watchers/MonitoredApp.swift#L3

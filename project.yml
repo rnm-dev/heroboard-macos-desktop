@@ -1,7 +1,7 @@
-name: WakaTime
+name: Heroboard
 
 options:
-  bundleIdPrefix: macos-wakatime
+  bundleIdPrefix: macos-heroboard
   createIntermediateGroups: true
 
 packages:
@@ -10,29 +10,29 @@ packages:
     branch: master
   Firebase:
     url: https://github.com/firebase/firebase-ios-sdk
-    from: 11.11.0
+    exactVersion: 10.22.0
 
 targets:
-  WakaTime:
+  Heroboard:
     type: application
     platform: macOS
     deploymentTarget: 10.15
-    sources: [WakaTime]
+    sources: [Heroboard]
     settings:
       CURRENT_PROJECT_VERSION: local-build
       MARKETING_VERSION: local-build
-      INFOPLIST_FILE: WakaTime/WakaTime-Info.plist
+      INFOPLIST_FILE: Heroboard/Heroboard-Info.plist
       GENERATE_INFOPLIST_FILE: YES
       CODE_SIGN_STYLE: Automatic
       DEVELOPMENT_TEAM: ${SV_DEVELOPMENT_TEAM}
       ENABLE_HARDENED_RUNTIME: YES
       DEAD_CODE_STRIPPING: YES
-      SWIFT_OBJC_BRIDGING_HEADER: WakaTime/WakaTime-Bridging-Header.h
+      SWIFT_OBJC_BRIDGING_HEADER: Heroboard/Heroboard-Bridging-Header.h
     postCompileScripts:
       - script: ./Scripts/Lint/swiftlint lint --quiet
         name: Swiftlint
     dependencies:
-      - target: WakaTime Helper
+      - target: Heroboard Helper
       - package: AppUpdater
       - package: Firebase
         product: FirebaseCrashlytics
@@ -41,22 +41,22 @@ targets:
           LOGIN_ITEMS_DIR="$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/Contents/Library/LoginItems"
           rm -rf "$LOGIN_ITEMS_DIR"
           mkdir -p "$LOGIN_ITEMS_DIR"
-          mv "$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/Contents/Resources/WakaTime Helper.app" "$LOGIN_ITEMS_DIR/"
-        name: Move "WakaTime Helper.app" to LoginItems
+          mv "$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/Contents/Resources/Heroboard Helper.app" "$LOGIN_ITEMS_DIR/"
+        name: Move "Heroboard Helper.app" to LoginItems
       - script: Scripts/Firebase/upload-dSYM.sh
         name: Firebase
         inputFiles:
           - ${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${TARGET_NAME}
           - $(SRCROOT)/$(BUILT_PRODUCTS_DIR)/$(INFOPLIST_PATH)
-  WakaTime Helper:
+  Heroboard Helper:
     type: application
     platform: macOS
     deploymentTarget: 10.15
-    sources: [WakaTime Helper]
+    sources: [Heroboard Helper]
     settings:
       CURRENT_PROJECT_VERSION: local-build
       MARKETING_VERSION: local-build
-      INFOPLIST_FILE: WakaTime Helper/WakaTime Helper-Info.plist
+      INFOPLIST_FILE: Heroboard Helper/Heroboard Helper-Info.plist
       GENERATE_INFOPLIST_FILE: YES
       CODE_SIGN_STYLE: Automatic
       DEVELOPMENT_TEAM: ${SV_DEVELOPMENT_TEAM}

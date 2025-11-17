@@ -23,7 +23,7 @@ jobs:
         run: xcodegen
       -
         name: Build app to run linters
-        run: xcodebuild -scheme WakaTime
+        run: xcodebuild -scheme Heroboard
 
   version:
     name: Version
@@ -87,8 +87,8 @@ jobs:
           valueFile: 'project.yml'
           changes:  |
             {
-              "targets.WakaTime.settings.CURRENT_PROJECT_VERSION": "${{ needs.version.outputs.semver }}",
-              "targets.WakaTime.settings.MARKETING_VERSION": "${{ needs.version.outputs.semver }}"
+              "targets.Heroboard.settings.CURRENT_PROJECT_VERSION": "${{ needs.version.outputs.semver }}",
+              "targets.Heroboard.settings.MARKETING_VERSION": "${{ needs.version.outputs.semver }}"
             }
           commitChange: false
       -
@@ -101,8 +101,8 @@ jobs:
         name: Build app
         id: build
         run: |
-          xcodebuild -scheme WakaTime -configuration Release
-          app=`find /Users/runner/Library/Developer/Xcode/DerivedData/ -name WakaTime.app`
+          xcodebuild -scheme Heroboard -configuration Release
+          app=`find /Users/runner/Library/Developer/Xcode/DerivedData/ -name Heroboard.app`
           echo "$app"
           directory=`dirname $app`
           echo "$directory"
@@ -118,7 +118,7 @@ jobs:
       -
         name: Codesign
         run: |
-          codesign -v --force --deep --timestamp -s "WakaTime" --options runtime ${{ steps.build.outputs.directory }}/WakaTime.app
+          codesign -v --force --deep --timestamp -s "Heroboard" --options runtime ${{ steps.build.outputs.directory }}/Heroboard.app
       -
         name: Store Credentials
         env:
@@ -129,24 +129,24 @@ jobs:
       -
         name: Notarize Helper
         run: |
-          ditto -c -k --keepParent "${{ steps.build.outputs.directory }}/WakaTime.app/Contents/Library/LoginItems/WakaTime Helper.app" helper.zip
+          ditto -c -k --keepParent "${{ steps.build.outputs.directory }}/Heroboard.app/Contents/Library/LoginItems/Heroboard Helper.app" helper.zip
           xcrun notarytool submit helper.zip --keychain-profile "notarytool-profile" --wait
-          xcrun stapler staple "${{ steps.build.outputs.directory }}/WakaTime.app/Contents/Library/LoginItems/WakaTime Helper.app"
+          xcrun stapler staple "${{ steps.build.outputs.directory }}/Heroboard.app/Contents/Library/LoginItems/Heroboard Helper.app"
       -
         name: Notarize App
         run: |
-          ditto -c -k --keepParent ${{ steps.build.outputs.directory }}/WakaTime.app main.zip
+          ditto -c -k --keepParent ${{ steps.build.outputs.directory }}/Heroboard.app main.zip
           xcrun notarytool submit main.zip --keychain-profile "notarytool-profile" --wait
-          xcrun stapler staple ${{ steps.build.outputs.directory }}/WakaTime.app
+          xcrun stapler staple ${{ steps.build.outputs.directory }}/Heroboard.app
       -
         name: Zip
-        run: ditto -c -k --sequesterRsrc --keepParent ${{ steps.build.outputs.directory }}/WakaTime.app WakaTime.zip
+        run: ditto -c -k --sequesterRsrc --keepParent ${{ steps.build.outputs.directory }}/Heroboard.app Heroboard.zip
       -
         name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: app
-          path: ./WakaTime.zip
+          path: ./Heroboard.zip
       -
         name: Remove tag if failure
         if: ${{ failure() }}
@@ -229,7 +229,7 @@ jobs:
         id: prepare
         run: |
           mkdir release
-          mv ./WakaTime.zip release/macos-wakatime.zip
+          mv ./Heroboard.zip release/macos-heroboard.zip
       -
         name: "Create release"
         uses: softprops/action-gh-release@master
@@ -241,7 +241,7 @@ jobs:
           target_commitish: ${{ github.sha }}
           draft: false
           files: |
-            ./release/macos-wakatime.zip
+            ./release/macos-heroboard.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       -

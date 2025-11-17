@@ -35,7 +35,7 @@ slack_output_for_main() {
     local temp=
     for j in ${changelog}
     do
-        temp="${temp}$(echo "$j" | awk '{printf "<https://github.com/wakatime/macos-wakatime/commit/"$1"|"$1">";$1=""; print $0 }')\n"
+        temp="${temp}$(echo "$j" | awk '{printf "<https://github.com/heroboard/macos-heroboard/commit/"$1"|"$1">";$1=""; print $0 }')\n"
     done
 
     slack="*Changelog*\n${temp}"
