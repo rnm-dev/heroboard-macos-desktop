@@ -21,7 +21,6 @@ class Heroboard: HeartbeatEventHandler {
     init(_ delegate: StatusBarDelegate) {
         self.delegate = delegate
 
-        Dependencies.installDependencies()
         if SettingsManager.shouldRegisterAsLoginItem() { SettingsManager.registerAsLoginItem() }
         if PropertiesManager.shouldRequestA11yPermission && !Accessibility.requestA11yPermission() {
             delegate.a11yStatusChanged(false)
@@ -91,54 +90,24 @@ class Heroboard: HeartbeatEventHandler {
             let appVersion = watcher.getAppVersion(app)
         else { return }
 
-        let cli = NSString.path(
-            withComponents: ConfigFile.resourcesFolder + ["heroboard-cli"]
-        )
-        let process = Process()
-        process.launchPath = cli
-        var args = [
-            "--entity",
-            entity,
-            "--entity-type",
-            entityType.rawValue,
-            "--category",
-            category.rawValue.replacingOccurrences(of: "_", with: " "),
-            "--plugin",
-            "\(appName)/\(appVersion) macos-heroboard/" + Bundle.main.version,
-            "--alternate-branch",
-            "<<LAST_BRANCH>>",
+        var body: [String: Any] = [
+            "type": "activity",
+            "time": time,
+            "entity": entity,
+            "entity_type": entityType.rawValue,
+            "category": category.rawValue,
+            "app": appName,
+            "app_version": appVersion,
+            "is_write": isWrite,
         ]
-        if let project = project {
-            args.append("--project")
-            args.append(project)
-        } else {
-            args.append("--alternate-project")
-            args.append("<<LAST_PROJECT>>")
-        }
-        if let language = language {
-            args.append("--language")
-            args.append(language)
-        }
-        if isWrite {
-            args.append("--write")
-        }
-
-        Logging.default.log("Sending heartbeat with: \(args)")
+        if let language { body["language"] = language }
 
         lastEntity = entity
         lastTime = time
         lastCategory = category
 
-        process.arguments = args
-        process.standardOutput = FileHandle.nullDevice
-        process.standardError = FileHandle.nullDevice
-        do {
-            // Use Heroboard's custom execute() method to run the process. This will call Process.launch()
-            // with ObjC exception bridging on macOS 12 or earlier and Process.run() on macOS 13 or newer.
-            try process.execute()
-        } catch {
-            Logging.default.log("Failed to run heroboard-cli: \(error)")
-        }
+        Logging.default.log("Sending activity heartbeat: \(body)")
+        HeartbeatClient.shared.send(body)
 
         delegate.fetchToday()
     }

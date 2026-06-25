@@ -7,15 +7,21 @@ class SettingsWindowController: NSWindowController, NSTextFieldDelegate {
         self.init(window: nil)
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 440, height: 470),
-            styleMask: [.titled, .closable],
+            contentRect: NSRect(x: 0, y: 0, width: 460, height: 620),
+            styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
-        window.center()
-        window.title = "Settings"
+        window.title = "Heroboard"
+        // Borderless look: transparent title bar, content runs full height, traffic lights stay.
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.isMovableByWindowBackground = true
+        window.backgroundColor = .black
+        window.appearance = NSAppearance(named: .darkAqua)
         window.contentView = settingsView
         self.window = window
         settingsView.adjustWindowSize(animate: false)
+        window.center()
     }
 }

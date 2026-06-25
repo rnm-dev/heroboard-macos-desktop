@@ -44,13 +44,6 @@ enum AppEnvironment {
         }
     }
 
-    /// Host serving `heroboard-cli` release zips. CLI binaries are
-    /// environment-agnostic, so this stays on production. (Pending backend
-    /// confirmation of whether dev hosts the CLI zips.)
-    var cliDownloadBaseURL: String {
-        "https://heroboard.app"
-    }
-
     /// REST API base on the product web host, e.g. `<host>/api/v1`.
     var apiBaseURL: String { "\(webBaseURL)/api/v1" }
 

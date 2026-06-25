@@ -1,5 +1,6 @@
 import AppUpdater
 import Cocoa
+import Combine
 import UserNotifications
 
 class AppDelegate: NSObject, NSApplicationDelegate, StatusBarDelegate, UNUserNotificationCenterDelegate {
@@ -10,9 +11,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, StatusBarDelegate, UNUserNot
     var statusBarA11ySeparator: NSMenuItem!
     var statusBarA11yStatus: Bool = true
     var settingsWindowController = SettingsWindowController()
-    var monitoredAppsWindowController = MonitoredAppsWindowController()
     var heroboard: Heroboard?
     let presenceManager = PresenceManager()
+    private var cancellables = Set<AnyCancellable>()
 
     @Atomic var lastTodayTime = 0
     @Atomic var lastTodayText = ""
@@ -64,12 +65,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, StatusBarDelegate, UNUserNot
         statusBarA11ySeparator = NSMenuItem.separator()
         menu.addItem(statusBarA11ySeparator)
         statusBarA11ySeparator.isHidden = true
-        menu.addItem(withTitle: "Dashboard", action: #selector(AppDelegate.dashboardClicked(_:)), keyEquivalent: "")
-        menu.addItem(withTitle: "Settings", action: #selector(AppDelegate.settingsClicked(_:)), keyEquivalent: "")
-        menu.addItem(
-            withTitle: "Monitored Apps",
-            action: #selector(AppDelegate.monitoredAppsClicked(_:)),
-            keyEquivalent: "")
+        menu.addItem(withTitle: "Open Heroboard", action: #selector(AppDelegate.settingsClicked(_:)), keyEquivalent: "")
         menu.addItem(
             withTitle: "Check for Updates",
             action: #selector(AppDelegate.checkForUpdatesClicked(_:)),
@@ -79,6 +75,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, StatusBarDelegate, UNUserNot
 
         heroboard = Heroboard(self)
         presenceManager.start()
+        HeartbeatClient.shared.flush() // drain any heartbeats queued offline in a previous session
+
+        // Reflect today's tracked time (from the heartbeat response) in the status bar.
+        Session.shared.$today
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] today in self?.updateStatusBarToday(today) }
+            .store(in: &cancellables)
 
         settingsWindowController.settingsView.delegate = self
 
@@ -113,25 +116,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, StatusBarDelegate, UNUserNot
         else { return }
 
         switch link {
-            case .settings:
+            case .settings, .monitoredApps:
                 showSettings()
-            case .monitoredApps:
-                showMonitoredApps()
-        }
-    }
-
-    @objc func dashboardClicked(_ sender: AnyObject) {
-        if let url = URL(string: "\(AppEnvironment.current.webBaseURL)/") {
-            NSWorkspace.shared.open(url)
         }
     }
 
     @objc func settingsClicked(_ sender: AnyObject) {
         showSettings()
-    }
-
-    @objc func monitoredAppsClicked(_ sender: AnyObject) {
-        showMonitoredApps()
     }
 
     @objc func checkForUpdatesClicked(_ sender: AnyObject) {
@@ -212,11 +203,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, StatusBarDelegate, UNUserNot
         settingsWindowController.showWindow(self)
     }
 
-    private func showMonitoredApps() {
-        NSApp.activate(ignoringOtherApps: true)
-        monitoredAppsWindowController.showWindow(self)
-    }
-
     internal func toastNotification(_ title: String) {
         let content = UNMutableNotificationContent()
         content.title = title
@@ -254,46 +240,30 @@ class AppDelegate: NSObject, NSApplicationDelegate, StatusBarDelegate, UNUserNot
         }
 
         let time = Int(NSDate().timeIntervalSince1970)
-        guard lastTodayTime + 120 < time else {
-            setText(lastTodayText)
-            return
-        }
+        guard lastTodayTime + 120 < time else { return }
 
         lastTodayTime = time
 
-        let cli = NSString.path(
-            withComponents: ConfigFile.resourcesFolder + ["heroboard-cli"]
-        )
-        let process = Process()
-        process.launchPath = cli
-        let args = [
-            "--today",
-            "--today-hide-categories",
-            "true",
-            "--plugin",
-            "macos-heroboard/" + Bundle.main.version,
-        ]
+        // Pull fresh identity / today / hero; the Session subscription updates the status bar.
+        HeartbeatClient.shared.refresh()
 
-        Logging.default.log("Fetching coding activity for Today from api: \(args)")
+        checkBrowserDuplicateTracking()
+    }
 
-        process.arguments = args
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = FileHandle.nullDevice
-
-        do {
-            try process.execute()
-        } catch {
-            Logging.default.log("Failed to run heroboard-cli fetching Today coding activity: \(error)")
+    private func updateStatusBarToday(_ today: Session.Today?) {
+        guard PropertiesManager.shouldDisplayTodayInStatusBar, let today, today.minutes > 0 else {
+            setText("")
             return
         }
 
-        let handle = pipe.fileHandleForReading
-        let data = handle.readDataToEndOfFile()
-        let text = (String(data: data, encoding: String.Encoding.utf8) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        lastTodayText = text
-        setText(text)
+        setText(Self.formatMinutes(today.minutes))
+    }
 
-        checkBrowserDuplicateTracking()
+    private static func formatMinutes(_ minutes: Int) -> String {
+        let hours = minutes / 60
+        let mins = minutes % 60
+        if hours > 0 && mins > 0 { return "\(hours)h \(mins)m" }
+        if hours > 0 { return "\(hours)h" }
+        return "\(mins)m"
     }
 }

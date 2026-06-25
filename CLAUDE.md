@@ -6,8 +6,9 @@ metrics from your activity in Xcode and other monitored apps. Proprietary softwa
 undergoing an incremental rewrite; some upstream structure and patterns still remain.
 
 The app sits in the system tray, watches the frontmost application via the macOS Accessibility
-API, and sends "heartbeats" to a bundled `heroboard-cli` binary, which reports them to the
-Heroboard backend. Results show up on the user's Heroboard dashboard.
+API, and POSTs "heartbeats" directly to the Heroboard backend (`/api/heartbeat`) in-process via
+`HeartbeatClient` — there is no longer a bundled `heroboard-cli`. Results show up on the user's
+Heroboard dashboard.
 
 ## Architecture
 
@@ -24,33 +25,39 @@ Two macOS app targets, written in Swift + AppKit (no SwiftUI app lifecycle; uses
 - `main.swift` — entry point; wires up `AppDelegate`.
 - `AppDelegate.swift` — status-bar item, menu, deep-link handling (`heroboard://...`),
   notifications, today's-time display, and the `AppUpdater` self-update hook.
-- `Heroboard.swift` — core domain logic. Defines `HeartbeatEventHandler`, builds the
-  `heroboard-cli` invocation, throttles heartbeats (`shouldSendHeartbeat`), and defines the
-  `Category` / `EntityType` / `DeepLink` enums.
+- `Heroboard.swift` — core domain logic. Defines `HeartbeatEventHandler`, builds the enriched
+  **activity** heartbeat and sends it via `HeartbeatClient`, throttles heartbeats
+  (`shouldSendHeartbeat`), and defines the `Category` / `EntityType` / `DeepLink` enums.
 - `Watchers/Watcher.swift` — observes the active app and Accessibility events.
 - `Watchers/MonitoredApp.swift` — the allow-list of trackable apps keyed by bundle ID
   (browsers, design tools, terminals, chat apps, Xcode, etc.), plus per-app category logic.
 - `Watchers/FileSavedWatcher.swift` — detects file-save events for "write" heartbeats.
 - `Helpers/` — manager singletons:
   - `MonitoringManager.swift` — which apps are monitored / enabled (largest file).
-  - `Dependencies.swift` — downloads & installs `heroboard-cli` at runtime.
-  - `AuthenticationManager.swift` — API-key auth against `api.heroboard.app`.
+  - `HeartbeatClient.swift` — in-process POST to `/api/heartbeat` (presence + activity heartbeats).
+  - `PresenceManager.swift` — ~60s presence heartbeats gated on user activity (HB-357).
+  - `Dependencies.swift` — browser-extension-conflict check + `isLocalDevBuild`.
+  - `AuthenticationManager.swift` — browser sign-in, stores `api_key`/`user_email`.
   - `SettingsManager.swift` — login-item registration.
   - `PropertiesManager.swift` — UserDefaults-backed preferences.
   - `Accessibility.swift` — A11y permission requests.
+  - `AppEnvironment.swift` — compile-time dev/prod endpoints.
   - `FilterManager.swift`, `AppInfo.swift`, `EventSourceObserver.swift`.
-- `ConfigFile.swift` — reads/writes `~/.heroboard.cfg` and `~/.heroboard/heroboard-internal.cfg`
-  (INI-style sections/keys, e.g. `settings.api_key`).
-- `Views/` + `WindowControllers/` — Settings and Monitored-Apps windows (programmatic AppKit).
+- `ConfigFile.swift` — reads/writes `~/.heroboard.cfg` (INI-style, e.g. `settings.api_key`;
+  `~/.heroboard-dev.cfg` in Debug).
+- `Views/SettingsView.swift` — the single SwiftUI window (Dashboard, Account, Monitored Apps,
+  Settings) hosted in an `NSHostingView`.
 - `Extensions/`, `Utils/` — `@Atomic` property wrapper, logging, ObjC bridging
-  (`ObjC.h/.m` + `Heroboard-Bridging-Header.h`) for safe `Process` launching on older macOS.
+  (`ObjC.h/.m` + `Heroboard-Bridging-Header.h`).
 
 ### External services & dependencies
 
-- **`heroboard-cli`** — downloaded at first run from
-  `https://heroboard.app/downloads/heroboard-cli/v1.131.0/...` into `~/.heroboard/`
-  (see `Dependencies.swift`). The app shells out to it for every heartbeat; it is the
-  component that actually talks to the tracking API.
+- **Heartbeats** — sent in-process by `HeartbeatClient` to `{BASE}/api/heartbeat` with the
+  signed-in `api_key` as `X-Api-Key`. Universal contract (HB-367/369): every beat carries `type`
+  (`presence` | `activity`), `time`, `client:"macos"`, and is human-initiated. `activity` beats add
+  entity, entity_type, category, app, app_version, is_write, and when available language — macOS is
+  the sole enrichment producer. The 200 response carries `{user, today, hero}` (see `Session`).
+  Offline beats are persisted (`HeartbeatQueue`) and retried. The bundled `heroboard-cli` was removed.
 - **AppUpdater** (SPM, `alanhamlett/AppUpdater`) — GitHub-releases-based auto-updates. This is
   the only third-party Swift package; there is no analytics/crash-reporting SDK.
 - Backend endpoints are centralized in `Helpers/AppEnvironment.swift`, selected at compile time
