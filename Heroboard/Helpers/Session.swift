@@ -4,16 +4,16 @@ import Foundation
 /// tracked time, and hero stats. Seeded from the cached config email so the UI isn't empty before
 /// the first heartbeat; thereafter the backend response is the source of truth.
 final class Session: ObservableObject {
-    struct User {
+    struct User: Equatable {
         let email: String
         let name: String?
         let handle: String?
     }
-    struct Today {
+    struct Today: Equatable {
         let day: String
         let minutes: Int
     }
-    struct Hero {
+    struct Hero: Equatable {
         let level: Int
         // swiftlint:disable:next identifier_name
         let xp: Int
@@ -60,12 +60,16 @@ final class Session: ObservableObject {
         }
 
         DispatchQueue.main.async {
-            if let parsedUser {
+            // Only publish / persist when something actually changed — this runs on every heartbeat.
+            if let parsedUser, parsedUser != self.user {
+                let emailChanged = parsedUser.email != self.user?.email
                 self.user = parsedUser
-                ConfigFile.setSetting(section: "settings", key: "user_email", val: parsedUser.email)
+                if emailChanged {
+                    ConfigFile.setSetting(section: "settings", key: "user_email", val: parsedUser.email)
+                }
             }
-            if let parsedToday { self.today = parsedToday }
-            if let parsedHero { self.hero = parsedHero }
+            if let parsedToday, parsedToday != self.today { self.today = parsedToday }
+            if let parsedHero, parsedHero != self.hero { self.hero = parsedHero }
         }
     }
 
@@ -79,6 +83,8 @@ final class Session: ObservableObject {
     /// The API key was rejected (401) — clear identity so the UI prompts re-sign-in.
     func signOut() {
         DispatchQueue.main.async {
+            guard self.user != nil || self.today != nil || self.hero != nil else { return }
+
             self.user = nil
             self.today = nil
             self.hero = nil
