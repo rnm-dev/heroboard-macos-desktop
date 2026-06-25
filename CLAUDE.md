@@ -1,9 +1,9 @@
 # Heroboard for macOS
 
 Menu-bar (status tray) macOS app that does automatic time tracking and generates coding
-metrics from your activity in Xcode and other monitored apps. It is a rebranded fork of the
-open-source [WakaTime macOS app](https://github.com/wakatime/macos-wakatime) — much of the
-upstream structure, history, and contributor list (`AUTHORS`) still reflects that origin.
+metrics from your activity in Xcode and other monitored apps. Proprietary software, © RNM
+(see `LICENSE`). The codebase originated as a fork of an open-source macOS time-tracker and is
+undergoing an incremental rewrite; some upstream structure and patterns still remain.
 
 The app sits in the system tray, watches the frontmost application via the macOS Accessibility
 API, and sends "heartbeats" to a bundled `heroboard-cli` binary, which reports them to the
@@ -51,11 +51,10 @@ Two macOS app targets, written in Swift + AppKit (no SwiftUI app lifecycle; uses
   `https://heroboard.app/downloads/heroboard-cli/v1.131.0/...` into `~/.heroboard/`
   (see `Dependencies.swift`). The app shells out to it for every heartbeat; it is the
   component that actually talks to the tracking API.
-- **AppUpdater** (SPM, `alanhamlett/AppUpdater`) — GitHub-releases-based auto-updates.
-- **Firebase Crashlytics** (SPM, pinned `10.22.0`) — declared as a dependency, but the
-  initialization is currently commented out in `Heroboard.swift` (`FirebaseApp.configure()`
-  is disabled). `GoogleService-Info.plist` is present under `Resources/`.
-- Backend APIs: `api.heroboard.app` (auth) and `api.heroboard.com` (user agents).
+- **AppUpdater** (SPM, `alanhamlett/AppUpdater`) — GitHub-releases-based auto-updates. This is
+  the only third-party Swift package; there is no analytics/crash-reporting SDK.
+- Backend endpoints are centralized in `Helpers/AppEnvironment.swift`, selected at compile time
+  (Debug → `dev.heroboard.app`, Release → production). See "Environments" below.
 
 ## Building
 
@@ -82,9 +81,21 @@ xcodebuild -scheme Heroboard -configuration Release
 > bug (see `CONTRIBUTING.md`). Verify before assuming newer Xcode works.
 
 Signing uses `DEVELOPMENT_TEAM: ${SV_DEVELOPMENT_TEAM}` (an environment variable) with
-automatic code-sign style and hardened runtime. App is **not** sandboxed (see
-`Heroboard/WakaTime.entitlements` — note the filename is a leftover from the fork and is not
-currently wired into `project.yml`).
+automatic code-sign style and hardened runtime. The app is **not** sandboxed and there is no
+explicit entitlements file wired into `project.yml`.
+
+## Environments
+
+`Helpers/AppEnvironment.swift` is the single source of truth for backend hosts. The environment
+is chosen by build configuration — there is no runtime switch:
+
+- **Debug** builds → `dev.heroboard.app` (web/auth + REST API at `/api/v1`).
+- **Release** builds → production (`heroboard.app`, `heroboard.com`).
+
+All endpoints (auth pages, REST API, dashboard, plugin pages, CLI download host) resolve through
+`AppEnvironment.current`. The REST API is served from the web host under `/api/v1` — there is no
+`api.` subdomain anymore. To add/adjust a host, edit `AppEnvironment` only, never inline a URL
+literal at a call site.
 
 ## Linting
 
@@ -98,16 +109,12 @@ swiftlint --fix                          # auto-fix warnings
 
 ## CI / Release
 
-GitHub Actions (`.github/workflows/`):
+There are currently **no GitHub Actions workflows** — the upstream CI (PR linter + release
+pipeline) was removed. Releases are produced manually via the `make` targets above
+(`make all` → signed/notarized steps done locally as needed).
 
-- `on_pull_request_linter.yml` — enforces branch-name prefixes and blocks fixup/squash commits.
-- `on_push.yml` — full release pipeline on `main` / `release`: build → semver tag
-  (`wakatime/semver-action`) → codesign + Apple notarize (app + helper) → changelog
-  (`bin/prepare_changelog.sh`) → GitHub release of `macos-heroboard.zip`.
-
-Branch-name prefixes are required and drive the version bump (see `CONTRIBUTING.md`):
-`major/`, `feature/` (minor), `bugfix/` (patch), `docs/` & `misc/` (build).
-Default working branch is `main`; production releases come from `release`.
+Helper scripts retained for a future pipeline: `bin/semver.sh` (branch-prefix → semver tag,
+per `CONTRIBUTING.md`) and `bin/prepare_changelog.sh`. Neither is wired to anything today.
 
 ## Conventions & gotchas
 

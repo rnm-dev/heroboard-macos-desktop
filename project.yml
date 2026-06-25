@@ -8,9 +8,6 @@ packages:
   AppUpdater:
     url: https://github.com/alanhamlett/AppUpdater
     branch: master
-  Firebase:
-    url: https://github.com/firebase/firebase-ios-sdk
-    exactVersion: 10.22.0
 
 targets:
   Heroboard:
@@ -19,23 +16,33 @@ targets:
     deploymentTarget: 10.15
     sources: [Heroboard]
     settings:
-      CURRENT_PROJECT_VERSION: local-build
-      MARKETING_VERSION: local-build
-      INFOPLIST_FILE: Heroboard/Heroboard-Info.plist
-      GENERATE_INFOPLIST_FILE: YES
-      CODE_SIGN_STYLE: Automatic
-      DEVELOPMENT_TEAM: ${SV_DEVELOPMENT_TEAM}
-      ENABLE_HARDENED_RUNTIME: YES
-      DEAD_CODE_STRIPPING: YES
-      SWIFT_OBJC_BRIDGING_HEADER: Heroboard/Heroboard-Bridging-Header.h
+      base:
+        CURRENT_PROJECT_VERSION: local-build
+        MARKETING_VERSION: local-build
+        INFOPLIST_FILE: Heroboard/Heroboard-Info.plist
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ${SV_DEVELOPMENT_TEAM}
+        ENABLE_HARDENED_RUNTIME: YES
+        DEAD_CODE_STRIPPING: YES
+        SWIFT_OBJC_BRIDGING_HEADER: Heroboard/Heroboard-Bridging-Header.h
+      configs:
+        # Debug talks to dev.heroboard.app (see AppEnvironment) and gets its own identity so it
+        # can run side by side with a Release build without colliding on bundle id / state.
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: macos-heroboard.Heroboard.debug
+          PRODUCT_NAME: Heroboard Dev
+          HEROBOARD_URL_SCHEME: heroboard-dev
+        Release:
+          PRODUCT_BUNDLE_IDENTIFIER: macos-heroboard.Heroboard
+          PRODUCT_NAME: Heroboard
+          HEROBOARD_URL_SCHEME: heroboard
     postCompileScripts:
       - script: ./Scripts/Lint/swiftlint lint --quiet
         name: Swiftlint
     dependencies:
       - target: Heroboard Helper
       - package: AppUpdater
-      - package: Firebase
-        product: FirebaseCrashlytics
     postBuildScripts:
       - script: |
           LOGIN_ITEMS_DIR="$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/Contents/Library/LoginItems"
@@ -43,26 +50,29 @@ targets:
           mkdir -p "$LOGIN_ITEMS_DIR"
           mv "$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/Contents/Resources/Heroboard Helper.app" "$LOGIN_ITEMS_DIR/"
         name: Move "Heroboard Helper.app" to LoginItems
-      - script: Scripts/Firebase/upload-dSYM.sh
-        name: Firebase
-        inputFiles:
-          - ${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${TARGET_NAME}
-          - $(SRCROOT)/$(BUILT_PRODUCTS_DIR)/$(INFOPLIST_PATH)
   Heroboard Helper:
     type: application
     platform: macOS
     deploymentTarget: 10.15
     sources: [Heroboard Helper]
     settings:
-      CURRENT_PROJECT_VERSION: local-build
-      MARKETING_VERSION: local-build
-      INFOPLIST_FILE: Heroboard Helper/Heroboard Helper-Info.plist
-      GENERATE_INFOPLIST_FILE: YES
-      CODE_SIGN_STYLE: Automatic
-      DEVELOPMENT_TEAM: ${SV_DEVELOPMENT_TEAM}
-      ENABLE_HARDENED_RUNTIME: YES
-      DEAD_CODE_STRIPPING: YES
-      SKIP_INSTALL: YES
+      base:
+        CURRENT_PROJECT_VERSION: local-build
+        MARKETING_VERSION: local-build
+        INFOPLIST_FILE: Heroboard Helper/Heroboard Helper-Info.plist
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ${SV_DEVELOPMENT_TEAM}
+        ENABLE_HARDENED_RUNTIME: YES
+        DEAD_CODE_STRIPPING: YES
+        SKIP_INSTALL: YES
+      configs:
+        # Bundle id only — PRODUCT_NAME stays "Heroboard Helper" so the postBuildScript that moves
+        # "Heroboard Helper.app" into LoginItems keeps working for both configs.
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: macos-heroboard.HeroboardHelper.debug
+        Release:
+          PRODUCT_BUNDLE_IDENTIFIER: macos-heroboard.HeroboardHelper
     postCompileScripts:
       - script: ./Scripts/Lint/swiftlint lint --quiet
         name: Swiftlint

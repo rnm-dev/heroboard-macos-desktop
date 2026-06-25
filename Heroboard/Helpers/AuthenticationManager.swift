@@ -19,8 +19,8 @@ struct AuthenticationData: Codable {
 class AuthenticationManager {
     static let shared = AuthenticationManager()
 
-    private let authBaseURL = "https://heroboard.app/desktop/auth"
-    private let apiBaseURL = "https://api.heroboard.app/api/v1/desktop/auth_decisions/api_key"
+    private let authBaseURL = "\(AppEnvironment.current.webBaseURL)/desktop/auth"
+    private let apiBaseURL = "\(AppEnvironment.current.apiBaseURL)/desktop/auth_decisions/api_key"
     private let pollInterval: TimeInterval = 1.0 // 1 second
     private let pollDuration: TimeInterval = 60.0 // 1 minute
 

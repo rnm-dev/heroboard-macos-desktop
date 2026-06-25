@@ -38,7 +38,7 @@ We require specific branch name prefixes for PRs:
 - `^docs?/.+` - `build`
 - `^misc/.+` - `build`
 
-More info at [wakatime/semver-action](https://github.com/wakatime/semver-action#branch-names).
+These prefixes drive the version bump computed by `bin/semver.sh` during the release workflow.
 
 ## Pull Requests
 

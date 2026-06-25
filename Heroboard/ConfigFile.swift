@@ -1,16 +1,25 @@
 import Foundation
 
 struct ConfigFile {
+    // Debug uses a separate home so a dev build doesn't share config/CLI with a Release build.
+    #if DEBUG
+    private static let folderName = ".heroboard-dev"
+    private static let configName = ".heroboard-dev.cfg"
+    #else
+    private static let folderName = ".heroboard"
+    private static let configName = ".heroboard.cfg"
+    #endif
+
     private static var userHome: [String] {
         FileManager.default.homeDirectoryForCurrentUser.pathComponents
     }
 
     public static var resourcesFolder: [String] {
-        userHome + [".heroboard"]
+        userHome + [folderName]
     }
 
     private static var filePath: String {
-        NSString.path(withComponents: userHome + [".heroboard.cfg"])
+        NSString.path(withComponents: userHome + [configName])
     }
 
     private static var filePathInternal: String {

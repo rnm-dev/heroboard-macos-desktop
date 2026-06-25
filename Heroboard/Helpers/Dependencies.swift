@@ -22,7 +22,7 @@ class Dependencies {
             let apiKey = ConfigFile.getSetting(section: "settings", key: "api_key"),
             !apiKey.isEmpty
         else { return nil }
-        let url = "https://api.heroboard.com/api/v1/users/current/user_agents?api_key=\(apiKey)"
+        let url = "\(AppEnvironment.current.siteApiBaseURL)/users/current/user_agents?api_key=\(apiKey)"
         let request = URLRequest(url: URL(string: url)!, cachePolicy: .reloadIgnoringCacheData)
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
@@ -91,7 +91,7 @@ class Dependencies {
             }
         }
 
-        let url = "https://heroboard.app/downloads/heroboard-cli/v1.131.0/heroboard-cli-darwin-\(architecture()).zip"
+        let url = "\(AppEnvironment.current.cliDownloadBaseURL)/downloads/heroboard-cli/v1.131.0/heroboard-cli-darwin-\(architecture()).zip"
         let zipFile = NSString.path(withComponents: ConfigFile.resourcesFolder + ["heroboard-cli.zip"])
         let cli = NSString.path(withComponents: ConfigFile.resourcesFolder + ["heroboard-cli"])
         let cliReal = NSString.path(withComponents: ConfigFile.resourcesFolder + ["heroboard-cli-darwin-\(architecture())"])

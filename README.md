@@ -41,12 +41,10 @@ Before requesting support for a new app, first check the [list of supported apps
 
 Pull requests and issues are welcome!
 See [Contributing][contributing] for more details.
-Many thanks to all [contributors][authors]!
 
 Made with :heart: by the Heroboard Team.
 
 [api key]: https://heroboard.com/api-key
 [dashboard]: https://heroboard.com/
 [contributing]: CONTRIBUTING.md
-[authors]: AUTHORS
 [supported apps]: https://github.com/heroboard/macos-heroboard/blob/main/Heroboard/Watchers/MonitoredApp.swift#L3

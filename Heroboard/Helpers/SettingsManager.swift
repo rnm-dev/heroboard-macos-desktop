@@ -28,8 +28,8 @@ class SettingsManager {
     static func registerAsLoginItem() {
         PropertiesManager.shouldLaunchOnLogin = true
 
-        // Use SMAppService on macOS 13 or newer to add WakaTime to the "Open at Login" list and SMLoginItemSetEnabled
-        // for older versions of macOS to add WakaTime to the "Allow in Background" list
+        // Use SMAppService on macOS 13 or newer to add Heroboard to the "Open at Login" list and SMLoginItemSetEnabled
+        // for older versions of macOS to add Heroboard to the "Allow in Background" list
         if #available(macOS 13.0, *), !simulateOldMacOS {
             do {
                 try SMAppService.mainApp.register()
@@ -38,7 +38,7 @@ class SettingsManager {
                 Logging.default.log(error.localizedDescription)
             }
         } else {
-            if SMLoginItemSetEnabled("macos-wakatime.WakaTimeHelper" as CFString, true) {
+            if SMLoginItemSetEnabled("macos-heroboard.HeroboardHelper" as CFString, true) {
                 Logging.default.log("Login item enabled successfully.")
             } else {
                 Logging.default.log("Failed to enable login item.")
@@ -57,7 +57,7 @@ class SettingsManager {
                 Logging.default.log(error.localizedDescription)
             }
         } else {
-            if SMLoginItemSetEnabled("macos-wakatime.WakaTimeHelper" as CFString, false) {
+            if SMLoginItemSetEnabled("macos-heroboard.HeroboardHelper" as CFString, false) {
                 Logging.default.log("Login item disabled successfully.")
             } else {
                 Logging.default.log("Failed to disable login item.")

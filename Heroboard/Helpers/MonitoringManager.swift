@@ -121,7 +121,7 @@ class MonitoringManager {
         }
     }
 
-    static var monitoringKey = "wakatime_monitored_apps"
+    static var monitoringKey = "heroboard_monitored_apps"
 
     static func entity(for app: NSRunningApplication, _ element: AXUIElement) -> (String?, EntityType)? {
         if MonitoringManager.isAppBrowser(app) {
@@ -191,15 +191,27 @@ class MonitoringManager {
             case .adobepremierepro:
                 return extractPrefix(element.rawTitle)
             case .arcbrowser:
-                fatalError("\(monitoredApp.rawValue) should never use window title as entity")
+                // Browsers/Notes/Xcode derive their entity elsewhere and must not fall back to the
+                // window title. Return nil rather than crashing if this is ever reached.
+                Logging.default.log("\(monitoredApp.rawValue) should never use window title as entity")
+                return nil
             case .beeper:
                 return extractPrefix(element.rawTitle)
             case .brave:
-                fatalError("\(monitoredApp.rawValue) should never use window title as entity")
+                // Browsers/Notes/Xcode derive their entity elsewhere and must not fall back to the
+                // window title. Return nil rather than crashing if this is ever reached.
+                Logging.default.log("\(monitoredApp.rawValue) should never use window title as entity")
+                return nil
             case .canva:
-                fatalError("\(monitoredApp.rawValue) should never use window title as entity")
+                // Browsers/Notes/Xcode derive their entity elsewhere and must not fall back to the
+                // window title. Return nil rather than crashing if this is ever reached.
+                Logging.default.log("\(monitoredApp.rawValue) should never use window title as entity")
+                return nil
             case .chrome, .chromebeta, .chromecanary:
-                fatalError("\(monitoredApp.rawValue) should never use window title as entity")
+                // Browsers/Notes/Xcode derive their entity elsewhere and must not fall back to the
+                // window title. Return nil rather than crashing if this is ever reached.
+                Logging.default.log("\(monitoredApp.rawValue) should never use window title as entity")
+                return nil
             case .figma:
                 guard
                     let title = extractPrefix(element.rawTitle, separator: " – "),
@@ -208,7 +220,10 @@ class MonitoringManager {
                 else { return nil }
                 return title
             case .firefox:
-                fatalError("\(monitoredApp.rawValue) should never use window title as entity")
+                // Browsers/Notes/Xcode derive their entity elsewhere and must not fall back to the
+                // window title. Return nil rather than crashing if this is ever reached.
+                Logging.default.log("\(monitoredApp.rawValue) should never use window title as entity")
+                return nil
             case .github:
                 return extractPrefix(element.rawTitle, separator: " - ")
             case .imessage:
@@ -222,7 +237,10 @@ class MonitoringManager {
             case .miro:
                 return extractSuffix(element.rawTitle)
             case .notes:
-                fatalError("\(monitoredApp.rawValue) should never use window title as entity")
+                // Browsers/Notes/Xcode derive their entity elsewhere and must not fall back to the
+                // window title. Return nil rather than crashing if this is ever reached.
+                Logging.default.log("\(monitoredApp.rawValue) should never use window title as entity")
+                return nil
             case .notion:
                 return extractPrefix(element.rawTitle, separator: " - ")
             case .postman:
@@ -236,9 +254,15 @@ class MonitoringManager {
             case .slack:
                 return extractPrefix(element.rawTitle, separator: " - ")
             case .safari:
-                fatalError("\(monitoredApp.rawValue) should never use window title as entity")
+                // Browsers/Notes/Xcode derive their entity elsewhere and must not fall back to the
+                // window title. Return nil rather than crashing if this is ever reached.
+                Logging.default.log("\(monitoredApp.rawValue) should never use window title as entity")
+                return nil
             case .safaripreview:
-                fatalError("\(monitoredApp.rawValue) should never use window title as entity")
+                // Browsers/Notes/Xcode derive their entity elsewhere and must not fall back to the
+                // window title. Return nil rather than crashing if this is ever reached.
+                Logging.default.log("\(monitoredApp.rawValue) should never use window title as entity")
+                return nil
             case .tableplus:
                 return extractPrefix(element.rawTitle, separator: " - ")
             case .terminal:
@@ -254,7 +278,10 @@ class MonitoringManager {
             case .whatsapp:
                 return extractPrefix(element.rawTitle, separator: " - ")
             case .xcode:
-                fatalError("\(monitoredApp.rawValue) should never use window title as entity")
+                // Browsers/Notes/Xcode derive their entity elsewhere and must not fall back to the
+                // window title. Return nil rather than crashing if this is ever reached.
+                Logging.default.log("\(monitoredApp.rawValue) should never use window title as entity")
+                return nil
             case .zoom:
                 return extractPrefix(element.rawTitle, separator: " - ")
             case .zed:
@@ -332,7 +359,9 @@ class MonitoringManager {
             case .whatsapp:
                 return .meeting
             case .xcode:
-                fatalError("\(monitoredApp.rawValue) should never use window title")
+                // Xcode is handled via the AX file-path pipeline, not heartbeatData; default safely.
+                Logging.default.log("\(monitoredApp.rawValue) should never reach category(for:)")
+                return .coding
             case .zoom:
                 return .meeting
             case .zed:
@@ -341,24 +370,17 @@ class MonitoringManager {
     }
     // swiftlint:enable cyclomatic_complexity
 
-    static func category(from url: String) -> Category {
-        let patterns = [
-            "github.com/[^/]+/[^/]+/pull/.*$",
-            "gitlab.com/[^/]+/[^/]+/[^/]+/merge_requests/.*$",
-            "bitbucket.org/[^/]+/[^/]+/pull-requests/.*$",
-        ]
+    // Precompiled once; heartbeats evaluate these up to once per second.
+    private static let codeReviewRegexes: [NSRegularExpression] = [
+        "github.com/[^/]+/[^/]+/pull/.*$",
+        "gitlab.com/[^/]+/[^/]+/[^/]+/merge_requests/.*$",
+        "bitbucket.org/[^/]+/[^/]+/pull-requests/.*$",
+    ].compactMap { try? NSRegularExpression(pattern: $0) }
 
-        for pattern in patterns {
-            do {
-                let regex = try NSRegularExpression(pattern: pattern)
-                let nsrange = NSRange(url.startIndex..<url.endIndex, in: url)
-                if regex.firstMatch(in: url, options: [], range: nsrange) != nil {
-                    return .codereviewing
-                }
-            } catch {
-                Logging.default.log("Regex error: \(error)")
-                continue
-            }
+    static func category(from url: String) -> Category {
+        let nsrange = NSRange(url.startIndex..<url.endIndex, in: url)
+        for regex in codeReviewRegexes where regex.firstMatch(in: url, options: [], range: nsrange) != nil {
+            return .codereviewing
         }
 
         return .coding
@@ -382,43 +404,33 @@ class MonitoringManager {
         }
     }
 
-    struct Pattern {
-        var expression: String
-        var group: Int
-    }
+    // Precompiled once. Each entry pairs a regex with the capture group holding the project name
+    // (group 2 when the pattern carries a platform prefix like github|gitlab|bitbucket).
+    private static let projectRegexes: [(regex: NSRegularExpression, group: Int)] = [
+        ("github.com/[^/]+/([^/]+)/?.*$", 1),
+        ("gitlab.com/[^/]+/([^/]+)/?.*$", 1),
+        ("bitbucket.org/[^/]+/([^/]+)/?.*$", 1),
+        ("app.circleci.com/.*/?(github|bitbucket|gitlab)/[^/]+/([^/]+)/?.*$", 2),
+        ("app.travis-ci.com/(github|bitbucket|gitlab)/[^/]+/([^/]+)/?.*$", 2),
+        ("app.travis-ci.org/(github|bitbucket|gitlab)/[^/]+/([^/]+)/?.*$", 2),
+    ].compactMap { pair in (try? NSRegularExpression(pattern: pair.0)).map { ($0, pair.1) } }
 
     static func project(from url: String) -> String? {
-        let patterns: [Pattern] = [
-            Pattern(expression: "github.com/[^/]+/([^/]+)/?.*$", group: 1),
-            Pattern(expression: "gitlab.com/[^/]+/([^/]+)/?.*$", group: 1),
-            Pattern(expression: "bitbucket.org/[^/]+/([^/]+)/?.*$", group: 1),
-            Pattern(expression: "app.circleci.com/.*/?(github|bitbucket|gitlab)/[^/]+/([^/]+)/?.*$", group: 2),
-            Pattern(expression: "app.travis-ci.com/(github|bitbucket|gitlab)/[^/]+/([^/]+)/?.*$", group: 2),
-            Pattern(expression: "app.travis-ci.org/(github|bitbucket|gitlab)/[^/]+/([^/]+)/?.*$", group: 2)
-        ]
+        let nsrange = NSRange(url.startIndex..<url.endIndex, in: url)
+        for (regex, group) in projectRegexes {
+            guard let match = regex.firstMatch(in: url, options: [], range: nsrange) else { continue }
 
-        for pattern in patterns {
-            do {
-                let regex = try NSRegularExpression(pattern: pattern.expression)
-                let nsrange = NSRange(url.startIndex..<url.endIndex, in: url)
-                if let match = regex.firstMatch(in: url, options: [], range: nsrange) {
-                    // Adjusted to capture the right group based on the pattern.
-                    // The group index might be 2 if the pattern includes a platform prefix before the project name.
-                    let range = match.range(at: pattern.group)
-
-                    if range.location != NSNotFound, let range = Range(range, in: url) {
-                        return String(url[range])
-                    }
-                }
-            } catch {
-                Logging.default.log("Regex error: \(error)")
-                continue
+            let range = match.range(at: group)
+            if range.location != NSNotFound, let range = Range(range, in: url) {
+                return String(url[range])
             }
         }
 
         // Return nil if no pattern matches
         return nil
     }
+
+    private static let githubRepoRootRegex = try? NSRegularExpression(pattern: "github.com/[^/]+/[^/]+/?$")
 
     static func language(for app: NSRunningApplication, _ element: AXUIElement) -> String? {
         guard let monitoredApp = app.monitoredApp else { return nil }
@@ -427,34 +439,26 @@ class MonitoringManager {
             case .canva:
                 return "Image (svg)"
             case .chrome, .chromebeta, .chromecanary:
-                do {
-                    guard let url = currentBrowserUrl(for: app, element) else { return nil }
+                guard let url = currentBrowserUrl(for: app, element) else { return nil }
 
-                    let regex = try NSRegularExpression(pattern: "github.com/[^/]+/[^/]+/?$")
-                    let nsrange = NSRange(url.startIndex..<url.endIndex, in: url)
-                    if regex.firstMatch(in: url, options: [], range: nsrange) != nil {
-                        let languages = element.firstDescendantWhere { $0.role == "AXStaticText" && $0.value == "Languages" }
-                        guard let languages = languages else { return nil }
+                let nsrange = NSRange(url.startIndex..<url.endIndex, in: url)
+                guard githubRepoRootRegex?.firstMatch(in: url, options: [], range: nsrange) != nil else { return nil }
 
-                        guard let wrapper = languages.parent?.parent else { return nil }
+                let languages = element.firstDescendantWhere { $0.role == "AXStaticText" && $0.value == "Languages" }
+                guard let languages = languages else { return nil }
 
-                        let langList = wrapper.firstDescendantWhere { $0.role == "AXList" }
-                        guard let langList = langList else { return nil }
+                guard let wrapper = languages.parent?.parent else { return nil }
 
-                        let link = langList.firstDescendantWhere { $0.role == "AXLink" }
-                        guard let link = link else { return nil }
+                let langList = wrapper.firstDescendantWhere { $0.role == "AXList" }
+                guard let langList = langList else { return nil }
 
-                        let lang = link.firstDescendantWhere { $0.role == "AXStaticText" }
-                        guard let lang = lang else { return nil }
+                let link = langList.firstDescendantWhere { $0.role == "AXLink" }
+                guard let link = link else { return nil }
 
-                        return lang.value
-                    }
+                let lang = link.firstDescendantWhere { $0.role == "AXStaticText" }
+                guard let lang = lang else { return nil }
 
-                    return nil
-                } catch {
-                    Logging.default.log("Error parsing language from browser: \(error)")
-                    return nil
-                }
+                return lang.value
             case .figma:
                 return "Image (svg)"
             case .inkscape:
@@ -538,7 +542,7 @@ class MonitoringManager {
             guard parts.count > 1 else { return nil }
 
             parts.removeLast()
-            i += 1
+            i -= 1
         }
         guard let item = parts.last else { return nil }
 

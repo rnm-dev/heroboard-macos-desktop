@@ -171,7 +171,7 @@ class PropertiesManager {
                     "https?://(\\w\\.)*golang\\.org/\n" +
                     "https?://(\\w\\.)*go\\.dev/\n" +
                     "https?://(\\w\\.)*npmjs\\.com/\n" +
-                    "https?//localhost[:\\d+]?/"
+                    "https?://localhost(:\\d+)?/"
             }
 
             return allowlist

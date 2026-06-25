@@ -1,5 +1,4 @@
 import AppKit
-// import Firebase
 import Foundation
 
 class Heroboard: HeartbeatEventHandler {
@@ -28,7 +27,6 @@ class Heroboard: HeartbeatEventHandler {
             delegate.a11yStatusChanged(false)
         }
 
-        configureFirebase()
         checkForApiKey()
         watcher.heartbeatEventHandler = self
         watcher.statusBarDelegate = delegate
@@ -39,15 +37,6 @@ class Heroboard: HeartbeatEventHandler {
             }
             PropertiesManager.hasLaunchedBefore = true
         }
-    }
-
-    private func configureFirebase() {
-        // Needed for uncaught exception reporting
-        UserDefaults.standard.register(
-          defaults: ["NSApplicationCrashOnExceptions": true]
-        )
-        // Firebase временно отключен
-        // FirebaseApp.configure()
     }
 
     private func checkForApiKey() {
@@ -159,7 +148,7 @@ enum DeepLink: String {
     case settings
     case monitoredApps
 
-    var url: URL? { URL(string: "heroboard://\(self)") }
+    var url: URL? { URL(string: "\(AppEnvironment.current.urlScheme)://\(self)") }
 }
 
 enum EntityType: String {

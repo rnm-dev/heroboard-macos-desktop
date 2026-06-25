@@ -213,7 +213,7 @@ class MonitoredAppsView: NSView, NSOutlineViewDataSource, NSOutlineViewDelegate 
         let appData = runningApps[sender.tag]
         guard
             let path = MonitoredApp.pluginAppIds[appData.bundleId],
-            let url = URL(string: "https://heroboard.com/\(path)")
+            let url = URL(string: "\(AppEnvironment.current.siteBaseURL)/\(path)")
         else { return }
 
         NSWorkspace.shared.open(url)

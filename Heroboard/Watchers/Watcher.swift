@@ -3,8 +3,8 @@ import Foundation
 import AppKit
 
 class Watcher: NSObject {
-    private let callbackQueue = DispatchQueue(label: "com.WakaTime.Watcher.callbackQueue", qos: .utility)
-    private let monitorQueue = DispatchQueue(label: "com.WakaTime.Watcher.monitorQueue", qos: .utility)
+    private let callbackQueue = DispatchQueue(label: "com.heroboard.Watcher.callbackQueue", qos: .utility)
+    private let monitorQueue = DispatchQueue(label: "com.heroboard.Watcher.monitorQueue", qos: .utility)
 
     var appVersions: [String: String] = [:]
     var eventSourceObserver: EventSourceObserver?
@@ -165,7 +165,11 @@ class Watcher: NSObject {
     private func unwatch(app: NSRunningApplication) {
         if let observer {
             observer.removeFromRunLoop()
-            guard let observingElement else { fatalError("observingElement should not be nil here") }
+            guard let observingElement else {
+                Logging.default.log("observingElement unexpectedly nil while unwatching; skipping observer teardown")
+                self.observer = nil
+                return
+            }
 
             try? observer.remove(notification: kAXFocusedUIElementChangedNotification, element: observingElement)
             try? observer.remove(notification: kAXFocusedWindowChangedNotification, element: observingElement)

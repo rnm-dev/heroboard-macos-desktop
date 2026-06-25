@@ -12,6 +12,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, StatusBarDelegate, UNUserNot
     var settingsWindowController = SettingsWindowController()
     var monitoredAppsWindowController = MonitoredAppsWindowController()
     var heroboard: Heroboard?
+    let presenceManager = PresenceManager()
 
     @Atomic var lastTodayTime = 0
     @Atomic var lastTodayText = ""
@@ -38,11 +39,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, StatusBarDelegate, UNUserNot
         let statusBar = NSStatusBar.system
         statusBarItem = statusBar.statusItem(withLength: NSStatusItem.variableLength)
         statusBarItem.button?.image = NSImage(named: NSImage.Name("Heroboard"))
+        #if DEBUG
+        statusBarItem.button?.toolTip = "Heroboard Dev (dev.heroboard.app)"
+        #endif
 
         // refresh code time text when status bar icon clicked
         statusBarItem.button?.target = self
         statusBarItem.button?.action = #selector(AppDelegate.onClick(_:))
         statusBarItem.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
+
+        #if DEBUG
+        let devHeaderItem = NSMenuItem(title: "● DEV — dev.heroboard.app", action: nil, keyEquivalent: "")
+        devHeaderItem.isEnabled = false
+        menu.addItem(devHeaderItem)
+        menu.addItem(NSMenuItem.separator())
+        #endif
 
         statusBarA11yItem = NSMenuItem(
             title: "* A11y permission needed *",
@@ -59,10 +70,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, StatusBarDelegate, UNUserNot
             withTitle: "Monitored Apps",
             action: #selector(AppDelegate.monitoredAppsClicked(_:)),
             keyEquivalent: "")
+        menu.addItem(
+            withTitle: "Check for Updates",
+            action: #selector(AppDelegate.checkForUpdatesClicked(_:)),
+            keyEquivalent: "")
         menu.addItem(NSMenuItem.separator())
         menu.addItem(withTitle: "Quit", action: #selector(AppDelegate.quitClicked(_:)), keyEquivalent: "")
 
         heroboard = Heroboard(self)
+        presenceManager.start()
 
         settingsWindowController.settingsView.delegate = self
 
@@ -70,8 +86,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, StatusBarDelegate, UNUserNot
             self.fetchToday()
         }
 
-        // request notifications permission
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
+        // Request notification permission once at launch; set the delegate so toasts can present
+        // while the app is foreground.
+        let notificationCenter = UNUserNotificationCenter.current()
+        notificationCenter.delegate = self
+        notificationCenter.requestAuthorization(options: [.alert, .sound]) { granted, error in
             guard granted else {
                 if let msg = error?.localizedDescription {
                     Logging.default.log(msg)
@@ -89,7 +108,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, StatusBarDelegate, UNUserNot
         // Handle deep links
         guard let urlString = event.paramDescriptor(forKeyword: keyDirectObject)?.stringValue,
               let url = URL(string: urlString),
-              url.scheme == "heroboard",
+              url.scheme == AppEnvironment.current.urlScheme,
               let link = DeepLink(rawValue: url.host ?? "")
         else { return }
 
@@ -102,7 +121,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, StatusBarDelegate, UNUserNot
     }
 
     @objc func dashboardClicked(_ sender: AnyObject) {
-        if let url = URL(string: "https://heroboard.app/") {
+        if let url = URL(string: "\(AppEnvironment.current.webBaseURL)/") {
             NSWorkspace.shared.open(url)
         }
     }
@@ -203,20 +222,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, StatusBarDelegate, UNUserNot
         content.title = title
         content.body = " "
 
-        let uuidString = UUID().uuidString
-        let request = UNNotificationRequest(
-        identifier: uuidString,
-        content: content, trigger: nil)
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
 
-        let notificationCenter = UNUserNotificationCenter.current()
-        notificationCenter.delegate = self
-
-        notificationCenter.requestAuthorization(options: [.alert, .sound]) { granted, _ in
-            guard granted else { return }
-
-            DispatchQueue.main.async {
-                notificationCenter.add(request)
-            }
+        // Authorization is requested once at launch; just enqueue here.
+        DispatchQueue.main.async {
+            UNUserNotificationCenter.current().add(request)
         }
     }
 

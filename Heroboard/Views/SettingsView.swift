@@ -46,6 +46,42 @@ class SettingsView: NSView, NSTextFieldDelegate, NSTextViewDelegate {
         return stack
     }()
 
+    // MARK: MCP Key (presence heartbeats — HB-357)
+
+    lazy var mcpKeyLabel: NSTextField = {
+        NSTextField(labelWithString: "Heroboard MCP Key:")
+    }()
+
+    lazy var mcpKeyField: NSSecureTextField = {
+        let field = NSSecureTextField()
+        field.placeholderString = "hb_…"
+        field.stringValue = KeychainStore.get(PresenceManager.mcpKeyAccount) ?? ""
+        field.target = self
+        field.action = #selector(saveMcpKeyClicked)
+        field.widthAnchor.constraint(equalToConstant: 280).isActive = true
+        return field
+    }()
+
+    lazy var mcpKeySaveButton: NSButton = {
+        NSButton(title: "Save", target: self, action: #selector(saveMcpKeyClicked))
+    }()
+
+    lazy var mcpKeyRow: NSStackView = {
+        let stack = NSStackView(views: [mcpKeyField, mcpKeySaveButton])
+        stack.alignment = .centerY
+        stack.orientation = .horizontal
+        stack.spacing = 8
+        return stack
+    }()
+
+    lazy var mcpKeyStackView: NSStackView = {
+        let stack = NSStackView(views: [mcpKeyLabel, mcpKeyRow])
+        stack.alignment = .leading
+        stack.orientation = .vertical
+        stack.spacing = 5
+        return stack
+    }()
+
     // MARK: Checkboxes
 
     lazy var launchAtLoginCheckbox: NSButton = {
@@ -213,6 +249,7 @@ class SettingsView: NSView, NSTextFieldDelegate, NSTextViewDelegate {
     lazy var stackView: NSStackView = {
         let stackView = NSStackView(views: [
             authenticationStackView,
+            mcpKeyStackView,
             checkboxesStackView,
             browserLabel,
             domainStackView,
@@ -348,6 +385,16 @@ class SettingsView: NSView, NSTextFieldDelegate, NSTextViewDelegate {
                         Logging.default.log("Authentication failed: \(error.localizedDescription)", type: .error)
                 }
             }
+        }
+    }
+
+    @objc func saveMcpKeyClicked() {
+        let key = mcpKeyField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        KeychainStore.set(key, for: PresenceManager.mcpKeyAccount)
+        if key.isEmpty {
+            showAlert(title: "MCP Key Cleared", message: "Presence heartbeats are disabled until a key is set.")
+        } else {
+            showAlert(title: "MCP Key Saved", message: "Presence heartbeats will use this key.")
         }
     }
 
