@@ -19,7 +19,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, StatusBarDelegate, UNUserNot
     @Atomic var lastTodayText = ""
     @Atomic var lastBrowserWarningTime = 0
 
-    let updater = AppUpdater(owner: "heroboard", repo: "macos-heroboard")
+    // Self-update from GitHub Releases of this repo (zip asset). Must match the actual repo —
+    // the old "heroboard/macos-heroboard" does not exist, so updates never resolved.
+    let updater = AppUpdater(owner: "rnm-dev", repo: "heroboard-macos-desktop")
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // Configure logging to a log file if activated by the user
