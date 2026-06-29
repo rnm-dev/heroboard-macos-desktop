@@ -123,6 +123,7 @@ final class HeartbeatClient {
             switch http.statusCode {
                 case 200:
                     HeartbeatStats.shared.recordSent()
+                    HeartbeatLog.shared.record(enriched)
                     if let data { Session.shared.apply(data) }
                     completion(.success)
                 case 401:
