@@ -119,23 +119,21 @@ swiftlint --fix                          # auto-fix warnings
 There are currently **no GitHub Actions workflows** — the upstream CI (PR linter + release
 pipeline) was removed. Releases are produced **locally**.
 
-**How to release a new version:** run the **`release` skill** (`.claude/skills/release/`) — or
-its underlying script directly:
+**How to release a new version:** run the **`release` skill** (`.claude/skills/release/`). Distribution
+is a **`.zip` on GitHub Releases** of **`rnm-dev/heroboard-macos-desktop`** — the app auto-updates from
+there via `AppUpdater` (`AppDelegate.swift`). In short:
 
 ```bash
-git tag v1.2.3 && git push origin v1.2.3        # version is derived from the latest git tag
-DEVELOPER_ID_APP="Developer ID Application: <Name> (<TEAMID>)" NOTARY_PROFILE=heroboard \
-  bin/release-prod.sh                            # build → sign → notarize → DMG → upload → appcast
+git tag v1.2.3 && git push origin v1.2.3        # version derived from the latest git tag
+make build                                       # then Developer-ID sign + notarize + ditto-zip (see skill)
+gh release create v1.2.3 macos-heroboard.zip --repo rnm-dev/heroboard-macos-desktop --notes "…"
 ```
 
-`bin/release-prod.sh` builds Release, Developer-ID-signs + notarizes, makes `Heroboard-<ver>.dmg`,
-uploads it with `latest.json` + `appcast.xml` to `root@94.247.128.103:/srv/heroboard-downloads/macos`
-(→ `https://heroboard.app/downloads/macos/`). See the skill for prerequisites and the full runbook.
-
-Two transitional caveats (until shipped):
-- The running app still updates via **AppUpdater → GitHub Releases**, not the server appcast — so
-  also `gh release create` a `macos-heroboard.zip` for existing users (HB-399 switches the updater).
-- `/downloads/` isn't served over HTTPS yet — the `:443` nginx block is pending (HB-398).
+Blockers to ship to real users:
+- `rnm-dev/heroboard-macos-desktop` is **PRIVATE** — make it public so release assets are downloadable.
+- No release exists yet — cut the first one.
+- (A self-hosted DMG variant `bin/release-prod.sh` → `heroboard.app/downloads` exists from an earlier
+  direction; not the chosen path now that it's "just a zip".)
 
 Helper scripts: `bin/semver.sh` (branch-prefix → semver tag, per `CONTRIBUTING.md`) and
 `bin/prepare_changelog.sh` — retained for a future pipeline, not auto-wired today.

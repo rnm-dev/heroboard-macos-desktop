@@ -4,8 +4,10 @@ Mac system tray app for automatic time tracking and metrics generated from your 
 
 ## Install
 
-1. Download the [latest release](https://github.com/heroboard/macos-heroboard/releases/latest/download/macos-heroboard.zip).
-2. Move `Heroboard.app` into your `Applications` folder, and run `Heroboard.app`.
+1. Download the latest **`macos-heroboard.zip`** from the
+   [latest release](https://github.com/rnm-dev/heroboard-macos-desktop/releases/latest).
+2. Unzip it, move `Heroboard.app` into your `Applications` folder, and run `Heroboard.app`.
+   (The app auto-updates from these releases going forward.)
 3. Enter your [Heroboard API Key][api key], then press `Save`.
 4. Use Xcode like normal and your coding activity will be displayed on your [Heroboard dashboard][dashboard]
 
@@ -47,4 +49,4 @@ Made with :heart: by the Heroboard Team.
 [api key]: https://heroboard.com/api-key
 [dashboard]: https://heroboard.com/
 [contributing]: CONTRIBUTING.md
-[supported apps]: https://github.com/heroboard/macos-heroboard/blob/main/Heroboard/Watchers/MonitoredApp.swift#L3
+[supported apps]: https://github.com/rnm-dev/heroboard-macos-desktop/blob/main/Heroboard/Watchers/MonitoredApp.swift#L3
