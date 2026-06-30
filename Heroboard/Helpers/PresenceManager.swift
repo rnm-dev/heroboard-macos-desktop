@@ -8,6 +8,11 @@ import Foundation
 ///
 /// A menu-bar app is never the frontmost app, so presence is gated on machine activity, not window
 /// focus. Cadence stays ~60s: sub-0.9-min gaps round to 0 minutes and time is lost.
+///
+/// Sends nothing until Accessibility is granted: without it the app can't read what the user is
+/// actually doing, so a presence beat is indistinguishable from idle mouse movement and would
+/// credit "effort" for someone who isn't working. The menu-bar "A11y permission needed" item
+/// nudges the user; tracking auto-resumes once the permission is granted (no restart needed).
 final class PresenceManager {
     private let cadence: TimeInterval = 60
     private let idleThreshold: TimeInterval = 5 * 60
@@ -28,6 +33,10 @@ final class PresenceManager {
     }
 
     private func tick() {
+        // No Accessibility → can't tell real work from idle presence (mouse wiggle counts as input
+        // below), so track nothing at all until the user grants it. Auto-resumes once trusted: the
+        // timer keeps running, this guard just gates the send.
+        guard AXIsProcessTrusted() else { return }
         guard isUserPresent else { return }
 
         var body: [String: Any] = ["type": "presence"]

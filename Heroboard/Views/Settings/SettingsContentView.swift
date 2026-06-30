@@ -3,7 +3,8 @@ import SwiftUI
 
 /// The single app window: a borderless dark panel with a centered title bar, a heartbeat counter +
 /// dashboard link, the account, the monitored-apps list (browser options expand inline), and
-/// general settings.
+/// general settings. A banner pins to the top while Accessibility is missing — without it the app
+/// records nothing, so the prompt has to be loud (but on-brand), not hidden in the menu.
 struct SettingsContentView: View {
     @ObservedObject var model: SettingsModel
     @ObservedObject private var stats = HeartbeatStats.shared
@@ -13,6 +14,11 @@ struct SettingsContentView: View {
 
     // Tweak to nudge the centered title's vertical alignment with the traffic lights.
     private let titleBarHeight: CGFloat = 36
+
+    // Live Accessibility-trust state: the OS grant can flip outside the app (System Settings), so we
+    // poll it on a light timer and animate the banner in/out rather than only checking once.
+    @State private var hasAccessibility = AXIsProcessTrusted()
+    private let a11yTick = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -26,7 +32,13 @@ struct SettingsContentView: View {
                 Color.clear.frame(height: titleBarHeight)
                 ScrollView {
                     VStack(alignment: .leading, spacing: 22) {
-                        topRow
+                        // No Accessibility ⇒ we send no beats, so the live heartbeat counter would
+                        // lie. Show the prompt in its place instead of pulsing over nothing.
+                        if hasAccessibility {
+                            topRow
+                        } else {
+                            accessibilityBanner
+                        }
                         accountSection
                         monitoredAppsSection
                         generalSection
@@ -47,6 +59,8 @@ struct SettingsContentView: View {
         .edgesIgnoringSafeArea(.all)
         .frame(width: 460)
         .accentColor(HBTheme.accent)
+        .onAppear { refreshAccessibility() }
+        .onReceive(a11yTick) { _ in refreshAccessibility() }
     }
 
     private var titleBar: some View {
@@ -63,6 +77,66 @@ struct SettingsContentView: View {
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(.white)
         }
+    }
+
+    // MARK: Accessibility prompt
+
+    private func refreshAccessibility() {
+        let trusted = AXIsProcessTrusted()
+        guard trusted != hasAccessibility else { return }
+        withAnimation(.easeInOut(duration: 0.25)) { hasAccessibility = trusted }
+    }
+
+    private func grantAccessibility() {
+        // Shows the system prompt (with an "Open System Settings" button); the timer hides the
+        // banner once the user flips the switch.
+        _ = Accessibility.requestA11yPermission()
+        refreshAccessibility()
+    }
+
+    private var accessibilityBanner: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "lock.shield.fill")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(.top, 1)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Accessibility access needed")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.white)
+                Text("Heroboard isn’t tracking anything yet. Grant Accessibility so it can tell real work from idle time.")
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.9))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 8)
+
+            Button(action: grantAccessibility) {
+                Text("Grant")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(Color(red: 0.86, green: 0.30, blue: 0.20))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 7))
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(LinearGradient(
+                    gradient: Gradient(colors: [Color(red: 0.96, green: 0.55, blue: 0.26), Color(red: 0.91, green: 0.30, blue: 0.44)]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ))
+        )
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.18)))
+        .shadow(color: Color.black.opacity(0.25), radius: 8, y: 3)
+        .transition(.move(edge: .top).combined(with: .opacity))
     }
 
     // MARK: Sections
