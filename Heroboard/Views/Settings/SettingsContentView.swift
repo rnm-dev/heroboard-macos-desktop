@@ -85,6 +85,7 @@ struct SettingsContentView: View {
     private func refreshAccessibility() {
         let trusted = AXIsProcessTrusted()
         guard trusted != hasAccessibility else { return }
+
         withAnimation(.easeInOut(duration: 0.25)) { hasAccessibility = trusted }
     }
 
@@ -97,10 +98,16 @@ struct SettingsContentView: View {
 
     private var accessibilityBanner: some View {
         HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "lock.shield.fill")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(.white)
-                .padding(.top, 1)
+            Group {
+                if #available(macOS 11.0, *) {
+                    Image(systemName: "lock.shield.fill")
+                } else {
+                    Text("🔒")
+                }
+            }
+            .font(.system(size: 20, weight: .semibold))
+            .foregroundColor(.white)
+            .padding(.top, 1)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text("Accessibility access needed")
