@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 /// The single app window: a borderless dark panel with a centered title bar, a heartbeat counter +
